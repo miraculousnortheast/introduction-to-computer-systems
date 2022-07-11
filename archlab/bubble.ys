@@ -1,0 +1,141 @@
+#南希  2000012824
+
+
+
+#Execution begins at address 0
+
+	.pos 0
+
+	irmovq stack,%rsp
+
+	call main
+
+	halt
+
+
+
+	.align 8
+
+# Source block
+
+src:
+
+	.quad 0xbca
+
+	.quad 0xcba
+
+	.quad 0xacb
+
+	.quad 0xcab
+
+	.quad 0xabc
+
+	.quad 0xbac
+
+
+
+
+
+main:
+
+	irmovq src,%rdi
+
+	irmovq $6,%rsi
+
+	call sort
+
+	ret
+
+
+
+#bubble_sort(long* data, long count)
+
+
+
+#last:%rsi	data:%rdi	i:%rdx		i+1：%rcx
+
+
+
+sort:
+
+	irmovq $1,%r13
+
+	irmovq $8,%r12
+
+	irmovq $3,%r14
+
+	subq %r13,%rsi	#count-1
+
+	addq %rsi,%rsi
+
+	addq %rsi,%rsi
+
+	addq %rsi,%rsi
+
+	andq %rsi,%rsi	#last == data即count-1==0
+
+	je	L15
+
+	addq %rdi,%rsi	#rsi存储last
+
+L13:
+
+	rrmovq %rdi,%rdx	#   i(初始化为 data）         第一个for循环body部分的第一句
+
+	rrmovq %rdx,%r10
+
+	subq %rsi,%r10	
+
+	jge	L14	#i>=last
+
+L17:	
+
+	rrmovq %rdx,%rcx                                    #第二个for循环body部分的第一句
+
+	addq %r12,%rcx		#i+1
+
+	mrmovq (%rcx),%r8	#*(i+1)
+
+	mrmovq (%rdx),%r9	#*i
+
+	rrmovq %r8,%r10
+
+	subq %r9,%r10		
+
+	jge	L16		#*i<=*(i+1)
+
+	rmmovq %r9,(%rcx)	#*(i + 1) = *i
+
+	rmmovq %r8,(%rdx)
+
+L16:
+
+	addq %r12,%rdx	#i++
+
+	rrmovq %rdx,%r10
+
+	subq %rsi,%r10	#比较rsi(last)和rdx(i)
+
+	jl	L17	#i<last
+
+L14:
+
+	subq %r12,%rsi	#last--
+
+	rrmovq %rdi,%r10
+
+	subq %rsi,%r10	#比较last和data
+
+	jl	L13
+
+L15:
+
+  ret
+
+
+
+#stack starts here and grows to lower addresses
+
+	.pos 0x200
+
+stack:
