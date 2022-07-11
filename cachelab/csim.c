@@ -1,4 +1,4 @@
-//��ϣ 2000012824
+//南希 2000012824
 
 
 #include <getopt.h>
@@ -9,23 +9,23 @@
 #include<math.h>
 struct lines
 {
-	int valid;//��Чλ
-	unsigned tag;//���λ
-	int waittime;//waittimeԽ�󣬱�ʾ���������ϴ��õ���ʱ��Խ��
+	int valid;//有效位
+	unsigned tag;//标记位
+	int waittime;//waittime越大，表示这个块距离上次用到的时间越长
 };
 char trace[1000];
 unsigned s, b, S, E;
 int hit = 0, miss = 0, eviction = 0;
 struct lines** cache = NULL;
-//cache��һ����ά���飬cache[i]��ʾ��i��,cache[i][j]��ʾ��i��ĵ�j��
+//cache是一个二维数组，cache[i]表示第i组,cache[i][j]表示第i组的第j行
 
 void changestatus(unsigned long long address)
 {
-	unsigned add_tag = address >> (b + s);//�����ַ�ı��λ
-	unsigned add_s = (address >> b) & ((1l << s) - 1);//�����ַ�ڵڼ���
-	int finish = 0;//�ж��Ƿ����
+	unsigned add_tag = address >> (b + s);//这个地址的标记位
+	unsigned add_s = (address >> b) & ((1l << s) - 1);//这个地址在第几组
+	int finish = 0;//判断是否完成
 
-	//�ж��Ƿ�����
+	//判断是否命中
 	for (int i = 0; i < E; i++)
 		if (cache[add_s][i].valid && cache[add_s][i].tag == add_tag)
 		{
@@ -36,10 +36,10 @@ void changestatus(unsigned long long address)
 		}
 	if (!finish)
 	{
-		//�ж��Ƿ��пհ׵���
+		//判断是否有空白的行
 		miss++;
 		for (int i = 0; i < E; i++)
-			if (!cache[add_s][i].valid)//�ҵ���һ���հ׵���
+			if (!cache[add_s][i].valid)//找到了一个空白的行
 			{
 				cache[add_s][i].valid = 1;
 				cache[add_s][i].tag = add_tag;
@@ -50,7 +50,7 @@ void changestatus(unsigned long long address)
 	}
 	if (!finish)
 	{
-		//�ж�Ҫ������һ��
+		//判断要驱逐哪一行
 		eviction++;
 		int maxwait = 0;
 		int eviction_index;
@@ -65,7 +65,7 @@ void changestatus(unsigned long long address)
 		cache[add_s][eviction_index].tag = add_tag;
 		cache[add_s][eviction_index].waittime = 0;
 	}
-	//���µȴ�ʱ��
+	//更新等待时间
 	for (int i = 0; i < S; i++)
 		for (int j = 0; j < E; j++)
 			if (cache[i][j].valid)
@@ -73,7 +73,7 @@ void changestatus(unsigned long long address)
 	return;
 }
 
-//�����ļ�ÿһ�еĲ����Լ���ַ�����õ�ַȥ���ʸ��ٻ���
+//读出文件每一行的操作以及地址，并用地址去访问高速缓存
 void deal(char* filepath)
 {
 	char buf[1000] = { 0 };
@@ -88,7 +88,7 @@ void deal(char* filepath)
 			sscanf(buf + 2, "%llx, %u", &address, &bytes);
 			changestatus(address);
 		}
-		//MҪ��������
+		//M要访问两遍
 		if (type == 'M') {
 			changestatus(address);
 		}
@@ -109,8 +109,8 @@ int main(int argc, char** argv) {
 			snprintf(trace, sizeof(trace), "%s", optarg);
 
 	}
-	//������malloc����S�飬ÿ��E�е�cache�����Ҷ���Чλ���г�ʼ��
-	S = (int)(pow(2,s));//һ���ж�����
+	//这里用malloc分配S组，每组E行的cache，并且对有效位进行初始化
+	S = (int)(pow(2,s));//一共有多少组
 	cache = malloc(sizeof(struct lines*) * S);
 	for (int i = 0; i < S; i++)
 		cache[i] = malloc(sizeof(struct lines) * E);
@@ -120,10 +120,9 @@ int main(int argc, char** argv) {
 
 	deal(trace);
 
-	//�ͷſռ�
+	//释放空间
 	for (unsigned i = 0; i < S; i++)
 		free(cache[i]);
 	free(cache);
 	printSummary(hit, miss, eviction);
 }
-
